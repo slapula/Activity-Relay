@@ -7,6 +7,10 @@ services:
       test: ["CMD", "redis-cli", "ping"]
     volumes:
       - "./redisdata:/data"
+  
+  # rabbitmq:
+  #   restart: always
+  #   image: rabbitmq:alpine
 
   worker:
     build: .
@@ -20,6 +24,7 @@ services:
       - "./config.yml:/var/lib/relay/config.yml"
     depends_on:
       - redis
+      # - rabbitmq
 
   server:
     build: .
@@ -33,3 +38,4 @@ services:
       - "./config.yml:/var/lib/relay/config.yml"
     depends_on:
       - redis
+      # - rabbitmq

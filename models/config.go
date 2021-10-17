@@ -19,7 +19,8 @@ type RelayConfig struct {
 	actorKey        *rsa.PrivateKey
 	domain          *url.URL
 	redisClient     *redis.Client
-	redisURL        string
+	brokerURL       *url.URL
+	redisURL        *url.URL
 	serverBind      string
 	serviceName     string
 	serviceSummary  string
@@ -57,8 +58,11 @@ func NewRelayConfig() (*RelayConfig, error) {
 		return nil, errors.New("ACTOR_PEM: " + err.Error())
 	}
 
-	redisURL := viper.GetString("REDIS_URL")
-	redisOption, err := redis.ParseURL(redisURL)
+	redisURL, err := url.ParseRequestURI(viper.GetString("REDIS_URL"))
+	if err != nil {
+		return nil, errors.New("REDIS_URL: " + err.Error())
+	}
+	redisOption, err := redis.ParseURL(redisURL.String())
 	if err != nil {
 		return nil, errors.New("REDIS_URL: " + err.Error())
 	}
@@ -68,12 +72,19 @@ func NewRelayConfig() (*RelayConfig, error) {
 		return nil, errors.New("Redis Connection Test: " + err.Error())
 	}
 
+	brokerURL, err := url.ParseRequestURI(viper.GetString("BROKER_URL"))
+	if err != nil {
+		logrus.Warn("BROKER_URL: INVALID OR EMPTY. USE REDIS_URL.")
+		brokerURL = redisURL
+	}
+
 	serverBind := viper.GetString("RELAY_BIND")
 
 	return &RelayConfig{
 		actorKey:        privateKey,
 		domain:          domain,
 		redisClient:     redisClient,
+		brokerURL:       brokerURL,
 		redisURL:        redisURL,
 		serverBind:      serverBind,
 		serviceName:     viper.GetString("RELAY_SERVICENAME"),
@@ -120,19 +131,25 @@ func (relayConfig *RelayConfig) DumpWelcomeMessage(moduleName string, version st
  - Configuration
 RELAY NAME      : %s
 RELAY DOMAIN    : %s
+BROKER URL      : %s
 REDIS URL       : %s
 BIND ADDRESS    : %s
 JOB_CONCURRENCY : %s
-`, version, moduleName, relayConfig.serviceName, relayConfig.domain.Host, relayConfig.redisURL, relayConfig.serverBind, strconv.Itoa(relayConfig.jobConcurrency))
+`, version, moduleName, relayConfig.serviceName, relayConfig.domain.Host, relayConfig.brokerURL, relayConfig.redisURL, relayConfig.serverBind, strconv.Itoa(relayConfig.jobConcurrency))
 }
 
 // NewMachineryServer create Redis backed Machinery Server from RelayConfig.
 func NewMachineryServer(globalConfig *RelayConfig) (*machinery.Server, error) {
 	cnf := &config.Config{
-		Broker:          globalConfig.redisURL,
+		Broker:          globalConfig.brokerURL.String(),
 		DefaultQueue:    "relay",
-		ResultBackend:   globalConfig.redisURL,
+		ResultBackend:   globalConfig.redisURL.String(),
 		ResultsExpireIn: 1,
+		AMQP: &config.AMQPConfig{
+			Exchange:     "relay_exchange",
+			ExchangeType: "direct",
+			BindingKey:   "relay_task",
+		},
 	}
 	newServer, err := machinery.NewServer(cnf)
 

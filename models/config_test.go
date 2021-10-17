@@ -88,7 +88,7 @@ func TestRelayConfig_DumpWelcomeMessage(t *testing.T) {
 		"module NAME":  "Testing",
 		"RELAY NANE":   relayConfig.serviceName,
 		"RELAY DOMAIN": relayConfig.domain.Host,
-		"REDIS URL":    relayConfig.redisURL,
+		"REDIS URL":    relayConfig.redisURL.String(),
 		"BIND ADDRESS": relayConfig.serverBind,
 	}
 

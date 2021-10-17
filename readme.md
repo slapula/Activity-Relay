@@ -46,6 +46,7 @@ relay --config /path/to/config.yml control
 
 ```yaml config.yml
 ACTOR_PEM: /var/lib/relay/actor.pem
+# BROKER_URL: amqp://guest:guest@rabbitmq:5672 # IF EMPTY, USE REDIS_URL
 REDIS_URL: redis://redis:6379
 
 RELAY_BIND: 0.0.0.0:8080
@@ -63,6 +64,7 @@ JOB_CONCURRENCY: 50
  This is **Optional** : When `config.yml` not exists, use environment variable.
 
  - ACTOR_PEM
+ - BROKER_URL
  - REDIS_URL
  - RELAY_BIND
  - RELAY_DOMAIN

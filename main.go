@@ -123,7 +123,6 @@ func buildCommand() *cobra.Command {
 func initConfig(cmd *cobra.Command) {
 	if verbose {
 		logrus.SetLevel(logrus.DebugLevel)
-		fmt.Println("DEBUG VIEW")
 	}
 
 	configPath := cmd.Flag("config").Value.String()
@@ -137,6 +136,7 @@ func initConfig(cmd *cobra.Command) {
 		logrus.Warn("Config file not exist. Use environment variables.")
 
 		viper.BindEnv("ACTOR_PEM")
+		viper.BindEnv("BROKER_URL")
 		viper.BindEnv("REDIS_URL")
 		viper.BindEnv("RELAY_BIND")
 		viper.BindEnv("RELAY_DOMAIN")
